@@ -1,73 +1,181 @@
-# Welcome to your Lovable project
+# 🌍 Real-Time AQI Monitoring & Analytics System
 
-## Project info
+A Full-Stack Air Quality Monitoring System that displays real-time AQI along with environmental components.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Built using:
 
-## How can I edit this code?
+- ⚡ FastAPI (Backend API)
+- 🌐 React + Vite (Frontend Dashboard)
+- 🍃 MongoDB (Database)
+- 📊 Data Logging & Analytics
+- 🤖 ML-Ready Architecture
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 🚀 Project Overview
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+This system provides:
 
-Changes made via Lovable will be committed automatically to this repo.
+- 🌫️ Real-time AQI display
+- 🌡️ Temperature monitoring
+- 💧 Humidity tracking
+- 🌬️ Wind speed analysis
+- 📈 AQI history logging
+- 🧠 Exposure tracking
+- 🏆 Clean Area Ranking
+- 📊 AI Insight Panel
 
-**Use your preferred IDE**
+Environmental readings are stored in MongoDB for further analysis and visualization.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🏗️ Architecture
 
-Follow these steps:
+Frontend (React Dashboard)  
+        ↓  
+FastAPI Backend (API Layer)  
+        ↓  
+MongoDB (Data Storage)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🔥 Core Features
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 🌍 Real-Time AQI Display
+Displays current AQI dynamically from backend.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 🌡️ Environmental Components
+- Temperature  
+- Humidity  
+- Wind Speed  
+- PM2.5 Level  
+
+### 📊 Historical Logging
+Stores AQI readings with timestamp.
+
+### 🧠 Exposure Calculator
+Tracks user exposure to pollution.
+
+### 🏆 Clean Area Ranking
+Ranks areas based on AQI score.
+
+### 📈 AI Insight Panel
+Provides interpretation of AQI levels.
+
+---
+
+## 📁 Project Structure
+
+```
+PM2.5-AQI/
+│
+├── air_sense_backend/
+│   ├── main.py
+│   ├── routes/
+│   ├── services/
+│   ├── schemas/
+│   ├── config/
+│   └── requirements.txt
+│
+├── air_sense_frontend/
+│   ├── src/
+│   ├── components/
+│   ├── pages/
+│   ├── package.json
+│   └── vite.config.ts
+│
+└── README.md
+```
+
+---
+
+## ⚙️ Backend Setup
+
+### 1️⃣ Install Dependencies
+
+```
+cd air_sense_backend
+pip install -r requirements.txt
+```
+
+### 2️⃣ Start MongoDB
+
+```
+mongod
+```
+
+### 3️⃣ Run Backend Server
+
+```
+uvicorn main:app --reload --port 8000
+```
+
+Backend runs at:
+
+```
+http://127.0.0.1:8000
+```
+
+---
+
+## 🌐 Frontend Setup
+
+```
+cd air_sense_frontend
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Frontend runs at:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+http://localhost:5173
+```
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🗄️ Database
 
-## What technologies are used for this project?
+Database Name:
 
-This project is built with:
+```
+air_sense_db
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Collections:
 
-## How can I deploy this project?
+- aqi_logs
+- users
+- exposure_logs
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## 📊 Sample Stored Document
 
-Yes, you can!
+```json
+{
+  "city": "Delhi",
+  "aqi": 180,
+  "temperature": 30,
+  "humidity": 45,
+  "wind_speed": 12,
+  "timestamp": "2026-03-01T10:45:00Z"
+}
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🧠 Future Improvements
+
+- Live AQI API Integration
+- Real ML Model Integration
+- JWT Authentication
+- Historical Trend Charts
+- Cloud Deployment
+- Power BI Integration
+
+---
+
+## ⭐ If You Like This Project
+
+Give it a star on GitHub!
