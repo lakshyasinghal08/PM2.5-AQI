@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --foreground: 220 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
+
+    --primary: 190 80% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 25% 10%;
+
+    --muted: 220 15% 92%;
+    --muted-foreground: 220 10% 50%;
+
+    --accent: 190 80% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 190 80% 45%;
+
+    --radius: 0.75rem;
+
+    --aqi-good: 142 70% 45%;
+    --aqi-moderate: 45 93% 50%;
+    --aqi-poor: 25 95% 55%;
+    --aqi-severe: 0 80% 55%;
+    --aqi-danger: 270 70% 55%;
+
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 0 0% 100% / 0.3;
+    --glow-primary: 190 80% 45%;
+    --glow-green: 142 70% 45%;
+    --glow-yellow: 45 93% 50%;
+    --glow-orange: 25 95% 55%;
+    --glow-red: 0 80% 55%;
+    --glow-purple: 270 70% 55%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222 30% 8%;
+    --foreground: 210 20% 92%;
+
+    --card: 222 25% 12%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 222 25% 12%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 190 80% 50%;
+    --primary-foreground: 220 30% 5%;
+
+    --secondary: 222 20% 16%;
+    --secondary-foreground: 210 20% 85%;
+
+    --muted: 222 20% 16%;
+    --muted-foreground: 215 15% 55%;
+
+    --accent: 190 80% 50%;
+    --accent-foreground: 220 30% 5%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 20% 18%;
+    --input: 222 20% 18%;
+    --ring: 190 80% 50%;
+
+    --aqi-good: 142 70% 50%;
+    --aqi-moderate: 45 93% 55%;
+    --aqi-poor: 25 95% 60%;
+    --aqi-severe: 0 80% 60%;
+    --aqi-danger: 270 70% 60%;
+
+    --glass-bg: 222 25% 14% / 0.6;
+    --glass-border: 210 20% 30% / 0.3;
+    --glow-primary: 190 80% 50%;
+    --glow-green: 142 70% 50%;
+    --glow-yellow: 45 93% 55%;
+    --glow-orange: 25 95% 60%;
+    --glow-red: 0 80% 60%;
+    --glow-purple: 270 70% 60%;
+
+    --sidebar-background: 222 25% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 20% 16%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 222 20% 18%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-xl border border-border/50 rounded-2xl;
+  }
+  .glass-card-strong {
+    @apply bg-card/80 backdrop-blur-2xl border border-border/60 rounded-2xl;
+  }
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--glow-primary) / 0.15), 0 0 60px hsl(var(--glow-primary) / 0.05);
+  }
+  .glow-green {
+    box-shadow: 0 0 15px hsl(var(--glow-green) / 0.3), 0 0 45px hsl(var(--glow-green) / 0.1);
+  }
+  .glow-yellow {
+    box-shadow: 0 0 15px hsl(var(--glow-yellow) / 0.3), 0 0 45px hsl(var(--glow-yellow) / 0.1);
+  }
+  .glow-orange {
+    box-shadow: 0 0 15px hsl(var(--glow-orange) / 0.3), 0 0 45px hsl(var(--glow-orange) / 0.1);
+  }
+  .glow-red {
+    box-shadow: 0 0 15px hsl(var(--glow-red) / 0.3), 0 0 45px hsl(var(--glow-red) / 0.1);
+  }
+  .glow-purple {
+    box-shadow: 0 0 15px hsl(var(--glow-purple) / 0.3), 0 0 45px hsl(var(--glow-purple) / 0.1);
+  }
+  .sensor-ring {
+    @apply rounded-full border-4 flex items-center justify-center transition-all duration-500;
+  }
+  .section-title {
+    @apply text-xl md:text-2xl font-semibold tracking-tight;
+  }
+  .hover-glow {
+    @apply transition-all duration-500;
+  }
+  .hover-glow:hover {
+    box-shadow: 0 0 30px hsl(var(--glow-primary) / 0.2), 0 0 80px hsl(var(--glow-primary) / 0.08);
+    transform: translateY(-2px);
+  }
+  .sensor-pulse {
+    animation: sensorPulse 4s ease-in-out infinite;
+  }
+  .animated-gradient {
+    background: linear-gradient(
+      -45deg,
+      hsl(var(--primary) / 0.15),
+      hsl(var(--aqi-good) / 0.1),
+      hsl(var(--primary) / 0.1),
+      hsl(var(--aqi-moderate) / 0.1)
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+  }
+  .blink {
+    animation: blink 1.5s step-end infinite;
+  }
+}
+
+@layer utilities {
+  .animate-pulse-glow {
+    animation: pulseGlow 3s ease-in-out infinite;
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes sensorPulse {
+  0%, 100% { box-shadow: 0 0 15px hsl(var(--glow-primary) / 0.2); }
+  50% { box-shadow: 0 0 25px hsl(var(--glow-primary) / 0.4), 0 0 50px hsl(var(--glow-primary) / 0.15); }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes alertBlink {
+  0%, 100% { border-opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
