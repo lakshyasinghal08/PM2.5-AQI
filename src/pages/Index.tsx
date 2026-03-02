@@ -15,7 +15,6 @@ import JaipurAreaMap from "@/components/JaipurAreaMap";
 import type { AreaData } from "@/components/JaipurAreaMap";
 import AIInsightPanel from "@/components/AIInsightPanel";
 import CleanAreaRanking from "@/components/CleanAreaRanking";
-import DownloadReport from "@/components/DownloadReport";
 import AboutAQI from "@/components/AboutAQI";
 import { getCityData } from "@/lib/cityData";
 import { fetchAqi, CITY_COORDINATES } from "@/lib/api";
@@ -82,7 +81,7 @@ const Index = () => {
       <DashboardHeader username={username} onLogout={() => { setUsername(null); setCity(null); }} city={city} onCityChange={setCity} />
 
       <main className="relative z-10 max-w-5xl mx-auto px-4 md:px-8 py-6 space-y-6">
-        <LocationBar city={city} weather={cityData.weather} temp={cityData.temp} onCityChange={setCity} />
+        <LocationBar city={city} weather={cityData.weather} temp={cityData.temp} />
 
         <AQIAlert aqi={cityData.aqi} />
 
@@ -113,10 +112,6 @@ const Index = () => {
         {mapAreas.length > 0 && (
           <CleanAreaRanking areas={mapAreas} city={city} />
         )}
-
-        <div className="flex items-center justify-center">
-          <DownloadReport city={city} aqi={cityData.aqi} pm25={cityData.pm25} co2={cityData.co2} humidity={cityData.humidity} history7={cityData.history7} />
-        </div>
 
         <AboutAQI />
 

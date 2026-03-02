@@ -25,10 +25,25 @@ const getColorForValue = (value: number) => {
 };
 
 const CircularMeter = ({
-  label, value, max, unit, size = 100, strokeWidth = 6, delay = 0, isMain = false,
+  label,
+  value,
+  max,
+  unit,
+  size = 100,
+  strokeWidth = 6,
+  delay = 0,
+  isMain = false,
+  colorValue,
 }: {
-  label: string; value: number; max: number; unit: string;
-  size?: number; strokeWidth?: number; delay?: number; isMain?: boolean;
+  label: string;
+  value: number;
+  max: number;
+  unit: string;
+  size?: number;
+  strokeWidth?: number;
+  delay?: number;
+  isMain?: boolean;
+  colorValue?: number;
 }) => {
   const [animatedValue, setAnimatedValue] = useState(0);
   const radius = (size - strokeWidth * 2) / 2;
@@ -42,7 +57,8 @@ const CircularMeter = ({
 
   const strokeDashoffset = circumference * (1 - animatedValue);
   const displayVal = Math.round(value);
-  const colors = getColorForValue(displayVal > max ? max : displayVal);
+  const safeColorVal = Math.max(0, Math.min(colorValue ?? displayVal, 500));
+  const colors = getColorForValue(safeColorVal);
   const cat = isMain ? getAqiCategory(displayVal) : null;
 
   const getStrokeColor = (val: number) => {
@@ -58,7 +74,7 @@ const CircularMeter = ({
       style={{ width: size, height: size }}>
       <svg width={size} height={size} className="absolute inset-0 -rotate-90">
         <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth={strokeWidth} opacity={0.3} />
-        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={getStrokeColor(displayVal)}
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={getStrokeColor(safeColorVal)}
           strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
           strokeLinecap="round" className="transition-all duration-1000 ease-out" />
       </svg>
@@ -79,9 +95,9 @@ const CircularMeter = ({
 
 const PollutantMShape = ({ aqi, pm25, co2, humidity, temp }: PollutantMShapeProps) => {
   const pm10 = Math.round(pm25 * 1.6 + (Math.random() - 0.5) * 10);
-  const coVal = Math.round(co2 * 0.005 + (Math.random() - 0.5) * 0.5);
   const no2 = Math.round(aqi * 0.22 + (Math.random() - 0.5) * 5);
   const o3 = Math.round(aqi * 0.18 + (Math.random() - 0.5) * 4);
+  const co2ColorVal = co2 > 600 ? 150 : co2 > 400 ? 80 : 30;
 
   return (
     <div className="glass-card-strong p-6 md:p-8 space-y-6">
@@ -89,11 +105,11 @@ const PollutantMShape = ({ aqi, pm25, co2, humidity, temp }: PollutantMShapeProp
 
       {/* M-Shape Layout */}
       <div className="flex flex-col items-center gap-4 md:gap-6">
-        {/* Top row: PM2.5 - Main AQI - CO */}
+        {/* Top row: PM2.5 - Main AQI - CO₂ */}
         <div className="flex items-end justify-center gap-4 md:gap-8">
           <CircularMeter label="PM2.5" value={pm25} max={250} unit="µg/m³" size={90} strokeWidth={5} delay={100} />
           <CircularMeter label="AQI" value={aqi} max={500} unit="" size={140} strokeWidth={8} delay={0} isMain />
-          <CircularMeter label="CO" value={coVal} max={10} unit="mg/m³" size={90} strokeWidth={5} delay={200} />
+          <CircularMeter label="CO₂" value={co2} max={2000} unit="ppm" size={90} strokeWidth={5} delay={200} colorValue={co2ColorVal} />
         </div>
 
         {/* Bottom row: PM10 - NO₂ - O₃ */}

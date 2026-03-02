@@ -6,6 +6,8 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import PollutionEscapePlanner from "@/components/PollutionEscapePlanner";
 import SafeOutdoorTimePredictor from "@/components/SafeOutdoorTimePredictor";
 import PollutionExposureCalculator from "@/components/PollutionExposureCalculator";
+import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
+import { CITY_COORDINATES } from "@/lib/api";
 
 // ── Types ──
 export interface AreaData {
@@ -16,7 +18,7 @@ export interface AreaData {
   history: number[];
 }
 
-type MapView = "markers" | "heatmap" | "satellite";
+type MapView = "default";
 
 // ── AQI Helpers ──
 const getAqiColor = (aqi: number) => {
@@ -44,12 +46,37 @@ const getSafetySuggestion = (aqi: number) => {
   return "Stay indoors. Keep windows closed. Use air purifiers at maximum.";
 };
 
-const generate24hPrediction = (currentAqi: number) => {
+const getMarkerColor = (aqi: number) => {
+  if (aqi <= 100) return "#22c55e"; // green - normal
+  if (aqi <= 200) return "#f97316"; // orange - moderate
+  return "#ef4444"; // red - high
+};
+
+// Simple linear regression forecast based on recent AQI history
+const generateRegressionForecast = (history: number[]) => {
+  if (history.length === 0) return [];
+
+  const n = history.length;
+  const xs = Array.from({ length: n }, (_, i) => i);
+  const ys = history;
+
+  const sumX = xs.reduce((s, v) => s + v, 0);
+  const sumY = ys.reduce((s, v) => s + v, 0);
+  const sumXY = xs.reduce((s, x, i) => s + x * ys[i], 0);
+  const sumX2 = xs.reduce((s, x) => s + x * x, 0);
+
+  const denom = n * sumX2 - sumX * sumX || 1;
+  const slope = (n * sumXY - sumX * sumY) / denom;
+  const intercept = (sumY - slope * sumX) / n;
+
+  const lastIndex = xs[xs.length - 1];
+
   const data = [];
-  let val = currentAqi;
-  for (let i = 0; i < 24; i++) {
-    val = Math.max(20, Math.min(400, val + Math.floor((Math.random() - 0.48) * 35)));
-    data.push({ hour: `${i}h`, aqi: val });
+  for (let i = 1; i <= 24; i++) {
+    const x = lastIndex + i;
+    const raw = slope * x + intercept;
+    const clamped = Math.max(20, Math.min(400, raw));
+    data.push({ hour: `${i}h`, aqi: Math.round(clamped) });
   }
   return data;
 };
@@ -74,45 +101,6 @@ const CircularAqi = ({ aqi, size = 64 }: { aqi: number; size?: number }) => {
   );
 };
 
-// ── Heatmap Blob ──
-const HeatmapBlob = ({ area }: { area: AreaData }) => {
-  const intensity = Math.min(area.aqi / 300, 1);
-  const radius = 60 + intensity * 80;
-  const color = getAqiColor(area.aqi);
-  return (
-    <div className="absolute rounded-full transition-all duration-1000 pointer-events-none"
-      style={{
-        left: `${area.x}%`, top: `${area.y}%`,
-        transform: "translate(-50%, -50%)",
-        width: radius, height: radius,
-        background: `radial-gradient(circle, ${color.hex}88 0%, ${color.hex}44 40%, ${color.hex}11 70%, transparent 100%)`,
-        filter: `blur(${8 + intensity * 12}px)`,
-      }}
-    />
-  );
-};
-
-// ── View Toggle ──
-const ViewToggle = ({ view, onChange }: { view: MapView; onChange: (v: MapView) => void }) => {
-  const views: { id: MapView; label: string }[] = [
-    { id: "markers", label: "Markers" },
-    { id: "heatmap", label: "Heatmap" },
-    { id: "satellite", label: "Satellite" },
-  ];
-  return (
-    <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/60 backdrop-blur-md border border-border/40">
-      {views.map(v => (
-        <button key={v.id} onClick={() => onChange(v.id)}
-          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-300 ${
-            view === v.id ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"
-          }`}>
-          {v.label}
-        </button>
-      ))}
-    </div>
-  );
-};
-
 // ── Main Component ──
 interface JaipurAreaMapProps {
   city: string;
@@ -120,18 +108,34 @@ interface JaipurAreaMapProps {
 }
 
 const JaipurAreaMap = ({ city, onAreasUpdate }: JaipurAreaMapProps) => {
+  const SENSOR_COUNT = 100;
   const [areas, setAreas] = useState<AreaData[]>([]);
   const [fadeIn, setFadeIn] = useState(true);
-  const [hoveredArea, setHoveredArea] = useState<string | null>(null);
   const [selectedArea, setSelectedArea] = useState<AreaData | null>(null);
-  const [mapView, setMapView] = useState<MapView>("markers");
+  const [mapView] = useState<MapView>("default");
   const [prediction24h, setPrediction24h] = useState<{ hour: string; aqi: number }[]>([]);
   const [cleanestHighlight, setCleanestHighlight] = useState<string | null>(null);
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+  });
 
   const initAreas = useCallback((cityName: string) => {
-    return getCityAreas(cityName).map(a => {
+    const baseAreas = getCityAreas(cityName);
+    if (baseAreas.length === 0) return [];
+
+    return Array.from({ length: SENSOR_COUNT }, () => {
+      const base = baseAreas[Math.floor(Math.random() * baseAreas.length)];
       const aqi = Math.floor(Math.random() * 250) + 50;
-      return { ...a, aqi, history: Array.from({ length: 12 }, () => Math.floor(Math.random() * 200) + 40) };
+      const jitterX = (Math.random() - 0.5) * 6; // small jitter so markers don't fully overlap
+      const jitterY = (Math.random() - 0.5) * 6;
+      return {
+        name: base.name,
+        x: Math.min(95, Math.max(5, base.x + jitterX)),
+        y: Math.min(95, Math.max(5, base.y + jitterY)),
+        aqi,
+        history: Array.from({ length: 12 }, () => Math.floor(Math.random() * 200) + 40),
+      };
     });
   }, []);
 
@@ -145,7 +149,7 @@ const JaipurAreaMap = ({ city, onAreasUpdate }: JaipurAreaMapProps) => {
       setSelectedArea(null);
     }, 250);
     return () => clearTimeout(t);
-  }, [city, initAreas]);
+  }, [city, initAreas, onAreasUpdate]);
 
   const randomize = useCallback(() => {
     setAreas(prev => {
@@ -172,7 +176,7 @@ const JaipurAreaMap = ({ city, onAreasUpdate }: JaipurAreaMapProps) => {
       const updated = areas.find(a => a.name === selectedArea.name);
       if (updated) {
         setSelectedArea(updated);
-        setPrediction24h(generate24hPrediction(updated.aqi));
+        setPrediction24h(generateRegressionForecast(updated.history));
       }
     }
   }, [areas]);
@@ -191,8 +195,10 @@ const JaipurAreaMap = ({ city, onAreasUpdate }: JaipurAreaMapProps) => {
   const riskAreas = useMemo(() => areas.filter(a => a.aqi > 200), [areas]);
   const avgAqi = useMemo(() => Math.round(areas.reduce((s, a) => s + a.aqi, 0) / (areas.length || 1)), [areas]);
 
-  const isSatellite = mapView === "satellite";
-  const showHeatmap = mapView === "heatmap";
+  const mapCenter = useMemo(() => {
+    const base = CITY_COORDINATES[city] || { lat: 28.6139, lon: 77.209 };
+    return { lat: base.lat, lng: base.lon };
+  }, [city]);
 
   return (
     <div className="glass-card-strong p-6 space-y-4 hover-glow">
@@ -208,7 +214,6 @@ const JaipurAreaMap = ({ city, onAreasUpdate }: JaipurAreaMapProps) => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <ViewToggle view={mapView} onChange={setMapView} />
           <span className="text-[10px] text-muted-foreground px-2 py-1 rounded-full bg-secondary/60 border border-border/30">
             Live · 7s
           </span>
@@ -226,86 +231,70 @@ const JaipurAreaMap = ({ city, onAreasUpdate }: JaipurAreaMapProps) => {
       )}
 
       {/* Map */}
-      <div className={`relative w-full aspect-[16/10] rounded-xl overflow-hidden border border-border/30 transition-all duration-500 ${fadeIn ? "opacity-100" : "opacity-0"} ${
-        isSatellite ? "bg-[hsl(220_30%_6%)]" : "bg-secondary/40"
-      }`}>
-        {!isSatellite && (
-          <div className="absolute inset-0 opacity-10" style={{
-            backgroundImage: "linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)",
-            backgroundSize: "32px 32px"
-          }} />
-        )}
-
-        {isSatellite && (
-          <div className="absolute inset-0 opacity-20" style={{
-            background: "radial-gradient(ellipse at 30% 40%, hsl(var(--aqi-good) / 0.15) 0%, transparent 60%), radial-gradient(ellipse at 70% 60%, hsl(var(--primary) / 0.1) 0%, transparent 50%)"
-          }} />
-        )}
-
-        <svg className="absolute inset-0 w-full h-full opacity-15" preserveAspectRatio="none" viewBox="0 0 100 100">
-          <line x1="10" y1="50" x2="90" y2="50" stroke="hsl(var(--muted-foreground))" strokeWidth="0.4" />
-          <line x1="50" y1="10" x2="50" y2="90" stroke="hsl(var(--muted-foreground))" strokeWidth="0.4" />
-          <line x1="20" y1="20" x2="80" y2="80" stroke="hsl(var(--muted-foreground))" strokeWidth="0.2" />
-          <line x1="80" y1="20" x2="20" y2="80" stroke="hsl(var(--muted-foreground))" strokeWidth="0.2" />
-          <circle cx="50" cy="45" r="18" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="0.3" />
-        </svg>
-
-        {showHeatmap && areas.map(area => <HeatmapBlob key={area.name} area={area} />)}
-
+      <div
+        className={`relative w-full aspect-[16/10] rounded-xl overflow-hidden border border-border/30 transition-all duration-500 ${
+          fadeIn ? "opacity-100" : "opacity-0"
+        } bg-secondary/40`}
+      >
         <div className="absolute top-3 left-3 px-3 py-1.5 rounded-xl glass-card-strong text-[11px] font-bold text-foreground flex items-center gap-1.5 z-20">
           <MapPin className="w-3 h-3 text-primary" />
           {city}, {getCityState(city)}
         </div>
 
-        {/* Markers */}
-        {areas.map(area => {
-          const color = getAqiColor(area.aqi);
-          const isHovered = hoveredArea === area.name;
-          const isRedZone = area.aqi > 200;
-          const isCleanest = cleanestHighlight === area.name;
-          return (
-            <div key={area.name} className="absolute cursor-pointer transition-all duration-500 z-10"
-              style={{ left: `${area.x}%`, top: `${area.y}%`, transform: "translate(-50%, -50%)" }}
-              onMouseEnter={() => setHoveredArea(area.name)}
-              onMouseLeave={() => setHoveredArea(null)}
-              onClick={() => { setSelectedArea(area); setPrediction24h(generate24hPrediction(area.aqi)); }}>
-              {/* Green glow for cleanest */}
-              {isCleanest && (
-                <div className="absolute rounded-full animate-ping opacity-40"
-                  style={{ backgroundColor: "#22c55e", width: 40, height: 40, margin: "auto", inset: 0 }} />
-              )}
-              <div className="absolute inset-0 rounded-full animate-ping opacity-25 transition-colors duration-1000"
-                style={{ backgroundColor: color.stroke, width: 24, height: 24, margin: "auto", inset: 0 }} />
-              <div className={`relative z-10 rounded-full border-2 border-background flex items-center justify-center transition-all duration-300 ${
-                isHovered ? "scale-[1.4]" : "scale-100"
-              } ${showHeatmap ? "w-4 h-4" : "w-7 h-7"}`} style={{ backgroundColor: color.stroke }}>
-                {!showHeatmap && <span className="text-[7px] font-bold text-background">{area.aqi}</span>}
-              </div>
-              {isRedZone && !showHeatmap && (
-                <AlertTriangle className="absolute -top-1 -right-1 w-3 h-3 text-aqi-severe z-20 animate-pulse" />
-              )}
-              {isHovered && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-30 animate-fade-in">
-                  <div className="glass-card-strong rounded-xl p-3 min-w-[160px] border border-border/50 shadow-2xl space-y-2">
-                    <p className="text-xs font-bold text-foreground">{area.name}</p>
-                    <div className="flex items-center gap-2">
-                      <CircularAqi aqi={area.aqi} size={38} />
-                      <div>
-                        <p className={`text-sm font-bold ${color.text}`}>{area.aqi}</p>
-                        <p className="text-[9px] text-muted-foreground">{color.label}</p>
-                      </div>
-                    </div>
-                    {isRedZone && (
-                      <p className="text-[9px] text-aqi-severe font-semibold flex items-center gap-1">
-                        <AlertTriangle className="w-2.5 h-2.5" /> Red Zone
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {loadError && (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-destructive bg-background/80">
+            Unable to load Google Maps. Please check your API key.
+          </div>
+        )}
+
+        {!loadError && !isLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+            Loading Google Map...
+          </div>
+        )}
+
+        {isLoaded && (
+          <GoogleMap
+            mapContainerStyle={{ width: "100%", height: "100%" }}
+            center={mapCenter}
+            zoom={11}
+            options={{
+              disableDefaultUI: true,
+              zoomControl: true,
+            }}
+          >
+            {areas.map(area => {
+              const latOffset = (area.y - 50) * 0.02;
+              const lonOffset = (area.x - 50) * 0.02;
+              const position = {
+                lat: mapCenter.lat + latOffset,
+                lng: mapCenter.lng + lonOffset,
+              };
+              const color = getMarkerColor(area.aqi);
+              const icon = {
+                path: "M12 2C8.13 2 5 5.13 5 9c0 4.17 5.4 10.39 6.27 11.34.2.22.54.22.74 0C13.6 19.39 19 13.17 19 9c0-3.87-3.13-7-7-7z",
+                fillColor: color,
+                fillOpacity: 0.95,
+                strokeColor: "#020617",
+                strokeWeight: 1.2,
+                scale: 1.3,
+                anchor: { x: 12, y: 22 },
+              } as any;
+              return (
+                <Marker
+                  key={area.name}
+                  position={position}
+                  onClick={() => setSelectedArea(area)}
+                  icon={icon}
+                  label={{
+                    text: String(area.aqi),
+                    className: "text-[10px] font-bold text-white",
+                  } as any}
+                />
+              );
+            })}
+          </GoogleMap>
+        )}
       </div>
 
       {/* Legend */}
